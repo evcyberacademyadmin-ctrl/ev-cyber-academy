@@ -115,7 +115,7 @@ export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' })
       {mobileMenuOpen && (
         <div className="md:hidden bg-cyber-card border-b border-cyber-border px-4 pt-4 pb-6 space-y-3 mt-3 shadow-2xl animate-fadeIn">
           <div className="px-3 py-2 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan/20 text-xs font-mono text-cyber-cyan flex items-center justify-between mb-2">
-            <span>EV-WEB-2 Webinar</span>
+            <span>EV CYBER ACADEMY</span>
             <span className="font-bold">{webinarDate}</span>
           </div>
 

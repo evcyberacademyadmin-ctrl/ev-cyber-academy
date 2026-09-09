@@ -2,7 +2,7 @@ import React from 'react';
 import { Shield, Clock, Calendar, Play, CheckCircle2, Zap, Award } from 'lucide-react';
 
 export default function HeroSection({ config, onRegisterClick, onWatchVideoClick }) {
-  const webinarName = config?.webinar_name || 'EV-WEB-2';
+  const webinarName = config?.webinar_name || 'EV CYBER ACADEMY';
   const webinarTitle = config?.webinar_title || '2-Day FREE Cyber Security Webinar';
   const webinarSubtitle = config?.webinar_subtitle || 'Start Your Cyber Security Journey From Zero';
   const webinarDesc = config?.webinar_desc || 'Learn the fundamentals of Cyber Security, networking, reconnaissance and practical security concepts in a beginner-friendly 2-day webinar.';

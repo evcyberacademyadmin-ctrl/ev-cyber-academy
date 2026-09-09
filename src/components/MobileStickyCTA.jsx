@@ -31,7 +31,7 @@ export default function MobileStickyCTA({ onRegisterClick, webinarDate = 'Coming
         <div className="text-left">
           <div className="text-[11px] font-mono text-cyber-cyan font-bold flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse"></span>
-            <span>EV-WEB-2 • FREE</span>
+            <span>EV CYBER ACADEMY</span>
           </div>
           <div className="text-xs text-slate-300 font-semibold">{webinarDate}</div>
         </div>

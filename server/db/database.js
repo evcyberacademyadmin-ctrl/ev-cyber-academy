@@ -105,7 +105,7 @@ async function initDatabase(db) {
 
   // Seed site configs if empty
   const defaultConfigs = [
-    { key: 'webinar_name', value: 'EV-WEB-2' },
+    { key: 'webinar_name', value: 'EV CYBER ACADEMY' },
     { key: 'theme_mode', value: 'cyber-dark' },
     { key: 'webinar_title', value: '2-Day FREE Cyber Security Webinar' },
     { key: 'webinar_subtitle', value: 'Start Your Cyber Security Journey From Zero' },
@@ -117,7 +117,7 @@ async function initDatabase(db) {
     { key: 'lfhp_original_price', value: '15000' },
     { key: 'lfhp_offer_price', value: '4000' },
     { key: 'lfhp_title', value: 'LFHP — Learn the Fundamentals of Hacking' },
-    { key: 'lfhp_desc', value: 'EV-WEB-2 gives you the foundation. If you want structured practical Cyber Security training after the webinar, continue your journey with LFHP.' },
+    { key: 'lfhp_desc', value: 'EV CYBER ACADEMY gives you the foundation. If you want structured practical Cyber Security training after the webinar, continue your journey with LFHP.' },
     { key: 'lfhp_cta_text', value: 'JOIN LFHP NOW' },
     { key: 'day1_title', value: 'DAY 1: Cyber Security Fundamentals' },
     { key: 'day1_topics', value: JSON.stringify([
@@ -151,7 +151,7 @@ async function initDatabase(db) {
   const faqCount = await db.get('SELECT COUNT(*) as count FROM faqs');
   if (faqCount.count === 0) {
     const defaultFaqs = [
-      { question: 'Is this webinar really free?', answer: 'Yes! EV-WEB-2 is 100% free for 2 days. There are no hidden fees or payment required to attend.', sort_order: 1 },
+      { question: 'Is this webinar really free?', answer: 'Yes! EV CYBER ACADEMY is 100% free for 2 days. There are no hidden fees or payment required to attend.', sort_order: 1 },
       { question: 'Do I need Cyber Security experience?', answer: 'No previous experience is required! The webinar is designed specifically for complete beginners, college students, and anyone starting from scratch.', sort_order: 2 },
       { question: 'Who can attend?', answer: 'College students, working professionals, job seekers, ethical hacking enthusiasts, or anyone interested in Cyber Security and Pentesting.', sort_order: 3 },
       { question: 'What time is the webinar?', answer: 'The webinar runs for 2 consecutive days, 1 hour per day, from 7:00 PM to 8:00 PM IST.', sort_order: 4 },

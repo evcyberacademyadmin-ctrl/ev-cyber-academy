@@ -16,7 +16,7 @@ export default function Footer({ onNavigateAdmin }) {
               EV CYBER ACADEMY is dedicated to empowering complete beginners, college students, and security aspirants with practical, hands-on Cyber Security & Pentesting education.
             </p>
             <div className="text-xs text-cyber-cyan font-mono font-semibold">
-              EV-WEB-2 • 2-Day FREE Cyber Security Webinar
+              EV CYBER ACADEMY • 2-Day FREE Cyber Security Webinar
             </div>
           </div>
 

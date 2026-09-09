@@ -1,6 +1,6 @@
-# 🛡️ EV Cyber Academy — 2-Day FREE Cyber Security Webinar & Lead Gen System (`EV-WEB-2`)
+# 🛡️ EV CYBER ACADEMY — 2-Day FREE Cyber Security Webinar & Lead Gen System
 
-A full-stack, high-conversion landing page and administrative lead management system built for **EV Cyber Academy**.
+A full-stack, high-conversion landing page and administrative lead management system built for **EV CYBER ACADEMY**.
 
 ---
 
@@ -131,7 +131,7 @@ CORS_ORIGINS=http://localhost:5173,https://ev-cyber-academy.onrender.com
 1. Clone the repository and install dependencies:
    ```bash
    git clone <repository-url>
-   cd FREE-2-DAY-REG
+   cd ev-cyber-academy
    npm install
    ```
 

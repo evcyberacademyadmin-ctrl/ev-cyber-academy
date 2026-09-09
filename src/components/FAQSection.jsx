@@ -5,7 +5,7 @@ export default function FAQSection({ faqs = [] }) {
   const [openIndex, setOpenIndex] = useState(0);
 
   const displayFaqs = faqs.length > 0 ? faqs : [
-    { question: 'Is this webinar really free?', answer: 'Yes! EV-WEB-2 is 100% free for 2 days. There are no hidden fees or payment required to attend.' },
+    { question: 'Is this webinar really free?', answer: 'Yes! EV CYBER ACADEMY is 100% free for 2 days. There are no hidden fees or payment required to attend.' },
     { question: 'Do I need Cyber Security experience?', answer: 'No previous experience is required! The webinar is designed specifically for complete beginners, college students, and anyone starting from scratch.' },
     { question: 'Who can attend?', answer: 'College students, working professionals, job seekers, ethical hacking enthusiasts, or anyone interested in Cyber Security and Pentesting.' },
     { question: 'What time is the webinar?', answer: 'The webinar runs for 2 consecutive days, 1 hour per day, from 7:00 PM to 8:00 PM IST.' },
@@ -33,7 +33,7 @@ export default function FAQSection({ faqs = [] }) {
             Got Questions? We Have Answers.
           </h2>
           <p className="text-slate-300 text-sm sm:text-base">
-            Everything you need to know about EV-WEB-2 webinar and your learning journey.
+            Everything you need to know about EV CYBER ACADEMY webinar and your learning journey.
           </p>
         </div>
 

@@ -11,7 +11,7 @@ export default function LFHPOffer({ config, onJoinClick }) {
     : '73.3';
 
   const title = config?.lfhp_title || 'LFHP — Learn the Fundamentals of Hacking';
-  const desc = config?.lfhp_desc || 'EV-WEB-2 gives you the foundation. If you want structured practical Cyber Security training after the webinar, continue your journey with LFHP.';
+  const desc = config?.lfhp_desc || 'EV CYBER ACADEMY gives you the foundation. If you want structured practical Cyber Security training after the webinar, continue your journey with LFHP.';
   const ctaText = config?.lfhp_cta_text || 'JOIN LFHP NOW';
 
   const valueStack = [
@@ -101,7 +101,7 @@ export default function LFHPOffer({ config, onJoinClick }) {
 
               <div className="py-2 border-y border-cyber-border">
                 <span className="text-xs text-cyber-gold font-mono uppercase font-bold block mb-1">
-                  Special EV-WEB-2 Offer
+                  Special Webinar Offer
                 </span>
                 <div className="text-4xl sm:text-5xl font-extrabold text-gradient-gold">
                   ₹{offerPrice.toLocaleString('en-IN')}

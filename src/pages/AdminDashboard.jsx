@@ -85,7 +85,7 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
         // Populate forms
         const c = configRes.config || {};
         setWebinarForm({
-          webinar_name: c.webinar_name || 'EV-WEB-2',
+          webinar_name: c.webinar_name || 'EV CYBER ACADEMY',
           webinar_title: c.webinar_title || '2-Day FREE Cyber Security Webinar',
           webinar_subtitle: c.webinar_subtitle || 'Start Your Cyber Security Journey From Zero',
           webinar_desc: c.webinar_desc || '',
@@ -342,7 +342,7 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
               
               <div>
                 <h1 className="text-2xl font-bold text-white mb-1">Dashboard Overview</h1>
-                <p className="text-xs text-slate-400">Live lead analytics and registration metrics for EV-WEB-2.</p>
+                <p className="text-xs text-slate-400">Live lead analytics and registration metrics for EV CYBER ACADEMY.</p>
               </div>
 
               {/* Stats Grid */}

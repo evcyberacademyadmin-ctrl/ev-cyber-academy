@@ -4,8 +4,8 @@ import { adminLogin } from '../services/api';
 import logoUrl from '../assets/logo';
 
 export default function AdminLogin({ onLoginSuccess, onBackToSite }) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('vimalthehacker');
+  const [password, setPassword] = useState('adminsshvimal-2008');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,7 +42,7 @@ export default function AdminLogin({ onLoginSuccess, onBackToSite }) {
               <span>ADMIN PORTAL</span>
             </div>
             <h2 className="text-2xl font-extrabold text-white mt-3">Admin Portal Authentication</h2>
-            <p className="text-xs text-slate-400 mt-1">Default credentials: admin / admin123</p>
+            <p className="text-xs text-slate-400 mt-1">Default credentials: vimalthehacker / adminsshvimal-2008</p>
           </div>
 
           {error && (
@@ -117,7 +117,7 @@ export default function AdminLogin({ onLoginSuccess, onBackToSite }) {
               onClick={onBackToSite}
               className="text-xs text-slate-400 hover:text-white transition-colors"
             >
-              ← Return to EV-WEB-2 Public Website
+              ← Return to EV CYBER ACADEMY Public Website
             </button>
           </div>
 

@@ -97,7 +97,7 @@ export default function RegistrationForm({ formFields = [], webinarDate = 'Comin
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">
-              Reserve Your Spot for EV-WEB-2
+              Reserve Your Spot for EV CYBER ACADEMY
             </h2>
             <p className="text-slate-300 text-sm sm:text-base">
               Fill out the details below to complete your registration and receive live webinar joining updates.

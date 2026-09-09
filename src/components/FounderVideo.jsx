@@ -63,7 +63,7 @@ export default function FounderVideo({ config, onRegisterClick }) {
 
   const videoPoints = [
     'Who is the Founder & EV CYBER ACADEMY mission',
-    'What EV-WEB-2 webinar actually covers',
+    'What the 2-day webinar actually covers',
     'What practical skills you will gain in 2 days',
     'How to claim your FREE Cyber Toolkit resources',
     'Next steps for beginners aspiring for pentesting careers'

@@ -3,7 +3,7 @@ import { CheckCircle2, Calendar, Clock, Gift, ShieldCheck, ArrowLeft, Download, 
 import logoSvg from '../assets/logo.svg';
 
 export default function RegistrationSuccess({ registration, config, onBackToHome }) {
-  const webinarName = config?.webinar_name || 'EV-WEB-2';
+  const webinarName = config?.webinar_name || 'EV CYBER ACADEMY';
   const webinarDate = config?.webinar_date || 'Coming Soon';
   const webinarTime = config?.webinar_time || '7:00 PM – 8:00 PM IST';
 
