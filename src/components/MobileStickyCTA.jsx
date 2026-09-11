@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 
-export default function MobileStickyCTA({ onRegisterClick, webinarDate = 'Coming Soon' }) {
+export default function MobileStickyCTA({ onRegisterClick, webinarDate = 'Coming Soon', isPaid = false, price = 0 }) {
   const [visible, setVisible] = useState(true);
+  const numPrice = Number(price || 0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,10 +39,14 @@ export default function MobileStickyCTA({ onRegisterClick, webinarDate = 'Coming
 
         <button
           onClick={onRegisterClick}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 font-extrabold text-sm shadow-glow-cyan flex items-center gap-1.5 active:scale-95 transition-transform"
+          className={`px-5 py-2.5 rounded-xl font-extrabold text-sm flex items-center gap-1.5 active:scale-95 transition-transform ${
+            isPaid
+              ? 'bg-gradient-to-r from-cyber-gold to-amber-400 text-slate-950 shadow-glow-gold'
+              : 'bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 shadow-glow-cyan'
+          }`}
         >
           <ShieldCheck className="w-4 h-4 fill-slate-950" />
-          <span>REGISTER FREE</span>
+          <span>{isPaid ? `REGISTER (₹${numPrice})` : 'REGISTER FREE'}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

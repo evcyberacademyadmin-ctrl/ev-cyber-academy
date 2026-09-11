@@ -42,6 +42,9 @@ export default function WebinarList({ webinars = [], pinnedWebinar = null }) {
           {webinars.map((webinar) => {
             const isPinned = webinar.is_pinned === 1;
             const regUrl = webinar.registration_form_url || 'https://forms.gle/GqsnVfsERERKRVCp7';
+            const isPaid = webinar.is_paid === 1 || Number(webinar.price) > 0;
+            const price = Number(webinar.price || 0);
+            const originalPrice = Number(webinar.original_price || 0);
 
             return (
               <div 
@@ -58,7 +61,7 @@ export default function WebinarList({ webinars = [], pinnedWebinar = null }) {
                     {isPinned ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan text-[11px] font-mono font-bold tracking-wider shadow-glow-cyan">
                         <Pin className="w-3.5 h-3.5 fill-cyber-cyan" />
-                        <span>PINNED WEBINAR</span>
+                        <span>PINNED</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyber-dark border border-cyber-border text-slate-400 text-[11px] font-mono">
@@ -66,9 +69,19 @@ export default function WebinarList({ webinars = [], pinnedWebinar = null }) {
                       </span>
                     )}
 
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-                      100% Free
-                    </span>
+                    {/* Free vs Paid Badge */}
+                    {isPaid ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyber-gold/20 border border-cyber-gold/50 text-cyber-gold text-[11px] font-mono font-bold uppercase tracking-wider shadow-glow-gold">
+                        <span>₹{price.toLocaleString('en-IN')}</span>
+                        {originalPrice > price && (
+                          <span className="line-through text-slate-400 font-normal text-[10px]">₹{originalPrice.toLocaleString('en-IN')}</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase tracking-wider font-mono">
+                        100% Free
+                      </span>
+                    )}
                   </div>
 
                   {/* Title */}
@@ -99,19 +112,23 @@ export default function WebinarList({ webinars = [], pinnedWebinar = null }) {
 
                 {/* Card Footer Actions */}
                 <div className="space-y-2 pt-2 border-t border-cyber-border/60">
-                  {/* Register Button */}
+                  {/* Register Button (Links directly to Google Form) */}
                   <a
                     href={regUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`w-full py-3 px-4 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 transition-all ${
-                      isPinned
+                      isPinned && isPaid
+                        ? 'bg-gradient-to-r from-cyber-gold via-amber-400 to-cyber-cyan text-slate-950 shadow-glow-gold hover:scale-[1.02]'
+                        : isPinned
                         ? 'bg-gradient-to-r from-cyber-cyan via-cyber-cyan-bright to-cyber-blue text-slate-950 shadow-glow-cyan hover:scale-[1.02]'
+                        : isPaid
+                        ? 'bg-cyber-gold/15 border border-cyber-gold/40 text-cyber-gold hover:bg-cyber-gold hover:text-slate-950 shadow-sm hover:scale-[1.02]'
                         : 'bg-cyber-cyan/15 border border-cyber-cyan/40 text-cyber-cyan hover:bg-cyber-cyan hover:text-slate-950 shadow-sm hover:scale-[1.02]'
                     }`}
                   >
                     <Shield className="w-4 h-4" />
-                    <span>REGISTER FREE</span>
+                    <span>{isPaid ? `REGISTER FOR ₹${price.toLocaleString('en-IN')}` : 'REGISTER FREE'}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
 

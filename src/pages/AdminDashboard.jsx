@@ -36,6 +36,9 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
     thumbnail_url: '',
     youtube_url: '',
     registration_form_url: 'https://forms.gle/GqsnVfsERERKRVCp7',
+    is_paid: 0,
+    price: '0',
+    original_price: '0',
     status: 'Published',
     is_pinned: 0
   });
@@ -51,6 +54,9 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
     youtube_url: '',
     founder_title: '',
     registration_form_url: 'https://forms.gle/GqsnVfsERERKRVCp7',
+    default_is_paid: '0',
+    default_price: '0',
+    default_original_price: '0',
     day1_title: '',
     day1_topics: [],
     day2_title: '',
@@ -94,6 +100,9 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
           youtube_url: c.youtube_url || '',
           founder_title: c.founder_title || 'Before You Register, Watch This',
           registration_form_url: c.registration_form_url || 'https://forms.gle/GqsnVfsERERKRVCp7',
+          default_is_paid: c.default_is_paid || '0',
+          default_price: c.default_price || '0',
+          default_original_price: c.default_original_price || '0',
           day1_title: c.day1_title || 'DAY 1: Cyber Security Fundamentals',
           day1_topics: Array.isArray(c.day1_topics) ? c.day1_topics : [],
           day2_title: c.day2_title || 'DAY 2: Practical Security Basics',
@@ -139,6 +148,9 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
       thumbnail_url: '',
       youtube_url: '',
       registration_form_url: siteConfig.registration_form_url || 'https://forms.gle/GqsnVfsERERKRVCp7',
+      is_paid: siteConfig.default_is_paid === '1' ? 1 : 0,
+      price: siteConfig.default_price || '0',
+      original_price: siteConfig.default_original_price || '0',
       status: 'Published',
       is_pinned: 0
     });
@@ -157,6 +169,9 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
       thumbnail_url: webinar.thumbnail_url || '',
       youtube_url: webinar.youtube_url || '',
       registration_form_url: webinar.registration_form_url || 'https://forms.gle/GqsnVfsERERKRVCp7',
+      is_paid: webinar.is_paid || 0,
+      price: webinar.price !== undefined ? String(webinar.price) : '0',
+      original_price: webinar.original_price !== undefined ? String(webinar.original_price) : '0',
       status: webinar.status || 'Published',
       is_pinned: webinar.is_pinned || 0
     });
@@ -503,6 +518,22 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
                               </span>
                             )}
 
+                            {/* Free vs Paid Pricing Badge */}
+                            {webinar.is_paid === 1 || Number(webinar.price) > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyber-gold/20 border border-cyber-gold/50 text-cyber-gold text-[10px] font-mono font-bold shadow-glow-gold">
+                                <DollarSign className="w-3 h-3" />
+                                <span>PAID: ₹{Number(webinar.price || 0).toLocaleString('en-IN')}</span>
+                                {Number(webinar.original_price) > Number(webinar.price) && (
+                                  <span className="line-through text-slate-400 font-normal ml-0.5">₹{Number(webinar.original_price).toLocaleString('en-IN')}</span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>100% FREE</span>
+                              </span>
+                            )}
+
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               isPublished 
                                 ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' 
@@ -547,14 +578,14 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
 
                           {webinar.registration_form_url && (
                             <div className="flex items-center gap-2 text-xs pt-1">
-                              <span className="text-slate-400">Registration Link:</span>
+                              <span className="text-slate-400 font-medium">Google Form:</span>
                               <a 
                                 href={webinar.registration_form_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="font-mono text-cyber-cyan hover:underline truncate max-w-sm flex items-center gap-1"
+                                className="font-mono text-cyber-cyan hover:underline truncate max-w-sm flex items-center gap-1 bg-cyber-dark/70 px-2 py-0.5 rounded-lg border border-cyber-border"
                               >
-                                <span>{webinar.registration_form_url}</span>
+                                <span className="truncate">{webinar.registration_form_url}</span>
                                 <ExternalLink className="w-3 h-3 shrink-0" />
                               </a>
                             </div>
@@ -643,7 +674,7 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
                 <p className="text-xs text-slate-400">Live multi-webinar analytics and configuration metrics for EV CYBER ACADEMY.</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="glass-card p-5 rounded-2xl border border-cyber-border">
                   <div className="text-xs text-slate-400 font-medium">Total Webinars</div>
                   <div className="text-3xl font-extrabold text-white mt-1">{webinars.length}</div>
@@ -651,11 +682,21 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
                 </div>
 
                 <div className="glass-card p-5 rounded-2xl border border-cyber-border">
+                  <div className="text-xs text-slate-400 font-medium">Free / Paid Split</div>
+                  <div className="text-2xl font-extrabold text-white mt-1">
+                    <span className="text-emerald-400">{webinars.filter(w => !w.is_paid || Number(w.price) === 0).length} Free</span>
+                    <span className="text-slate-500 mx-1.5">•</span>
+                    <span className="text-cyber-gold">{webinars.filter(w => w.is_paid === 1 || Number(w.price) > 0).length} Paid</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1">Configurable pricing</div>
+                </div>
+
+                <div className="glass-card p-5 rounded-2xl border border-cyber-border">
                   <div className="text-xs text-slate-400 font-medium">Pinned Webinar</div>
-                  <div className="text-xl font-bold text-cyber-cyan mt-1 truncate">
+                  <div className="text-lg font-bold text-cyber-cyan mt-1 truncate">
                     {webinars.find(w => w.is_pinned === 1)?.title || 'None Pinned'}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">Shown at top of public site</div>
+                  <div className="text-[11px] text-slate-400 mt-1">Top of public site</div>
                 </div>
 
                 <div className="glass-card p-5 rounded-2xl border border-cyber-border">
@@ -722,15 +763,62 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
                     <Link2 className="w-4 h-4" />
                     <span>Default External Registration Form URL (Google Form)</span>
                   </label>
-                  <p className="text-xs text-slate-400 mb-3">Default fallback link when a specific webinar does not have its own URL set.</p>
+                  <p className="text-xs text-slate-400 mb-3">Default fallback Google Form link when a specific webinar does not have its own custom URL set.</p>
                   <input
                     type="url"
                     value={webinarSettingsForm.registration_form_url}
                     onChange={(e) => setWebinarSettingsForm({ ...webinarSettingsForm, registration_form_url: e.target.value })}
                     placeholder="https://forms.gle/..."
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-cyber-dark border border-cyber-cyan/40 text-xs text-white focus:outline-none focus:border-cyber-cyan"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-cyber-dark border border-cyber-cyan/40 text-xs text-white focus:outline-none focus:border-cyber-cyan font-mono"
                   />
+                </div>
+
+                {/* Default Pricing Setting */}
+                <div className="p-4 rounded-xl bg-cyber-gold/5 border border-cyber-gold/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-cyber-gold uppercase tracking-wider flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4" />
+                      <span>Default Webinar Pricing Template</span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">Used as default when creating new webinars</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Access Type</label>
+                      <select
+                        value={webinarSettingsForm.default_is_paid}
+                        onChange={(e) => setWebinarSettingsForm({ ...webinarSettingsForm, default_is_paid: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-cyber-dark border border-cyber-border text-xs text-white"
+                      >
+                        <option value="0">100% Free</option>
+                        <option value="1">Paid Access</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Default Fee / Price (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={webinarSettingsForm.default_price}
+                        onChange={(e) => setWebinarSettingsForm({ ...webinarSettingsForm, default_price: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-cyber-dark border border-cyber-border text-xs text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Default Regular Price (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={webinarSettingsForm.default_original_price}
+                        onChange={(e) => setWebinarSettingsForm({ ...webinarSettingsForm, default_original_price: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-cyber-dark border border-cyber-border text-xs text-white font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1179,18 +1267,132 @@ export default function AdminDashboard({ token, onLogout, onBackToSite }) {
                 </div>
               </div>
 
-              {/* External Registration Form URL (Specific to this Webinar) */}
-              <div className="p-3.5 rounded-xl bg-cyber-cyan/5 border border-cyber-cyan/30">
-                <label className="block font-bold text-cyber-cyan uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Link2 className="w-4 h-4" />
-                  <span>Dedicated External Registration Form URL</span>
-                </label>
-                <p className="text-[11px] text-slate-400 mb-2">Each webinar has its own unique Google Form link.</p>
+              {/* Webinar Pricing & Access Type (FREE vs PAID) */}
+              <div className="p-4 rounded-2xl bg-cyber-dark/90 border border-cyber-border space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-cyber-gold" />
+                    <span>Webinar Access & Fee Structure</span>
+                  </label>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
+                    webinarModalForm.is_paid === 1 || Number(webinarModalForm.price) > 0
+                      ? 'bg-cyber-gold/20 border border-cyber-gold/40 text-cyber-gold shadow-glow-gold'
+                      : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                  }`}>
+                    {webinarModalForm.is_paid === 1 || Number(webinarModalForm.price) > 0 ? `PAID (₹${Number(webinarModalForm.price || 0).toLocaleString('en-IN')})` : '100% FREE'}
+                  </span>
+                </div>
+
+                {/* Free vs Paid Toggle Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setWebinarModalForm({ ...webinarModalForm, is_paid: 0, price: '0', original_price: '0' })}
+                    className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all ${
+                      webinarModalForm.is_paid === 0
+                        ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-sm ring-1 ring-emerald-500'
+                        : 'bg-cyber-card border-cyber-border text-slate-400 hover:text-white hover:border-cyber-border/80'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${webinarModalForm.is_paid === 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-cyber-dark text-slate-400'}`}>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white">100% Free Webinar</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">Free registration, zero entry fee</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setWebinarModalForm({ ...webinarModalForm, is_paid: 1, price: webinarModalForm.price === '0' ? '499' : webinarModalForm.price })}
+                    className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all ${
+                      webinarModalForm.is_paid === 1
+                        ? 'bg-cyber-gold/10 border-cyber-gold text-white shadow-sm ring-1 ring-cyber-gold'
+                        : 'bg-cyber-card border-cyber-border text-slate-400 hover:text-white hover:border-cyber-border/80'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${webinarModalForm.is_paid === 1 ? 'bg-cyber-gold/20 text-cyber-gold' : 'bg-cyber-dark text-slate-400'}`}>
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white">Paid Entry / Ticket Fee</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">Paid webinar with fixed amount</div>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Paid Amount Inputs */}
+                {webinarModalForm.is_paid === 1 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-cyber-border animate-fadeIn">
+                    <div>
+                      <label className="block font-semibold text-cyber-gold uppercase tracking-wider mb-1">
+                        Webinar Amount / Fee (₹) <span className="text-cyber-cyan">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={webinarModalForm.price}
+                          onChange={(e) => setWebinarModalForm({ ...webinarModalForm, price: e.target.value })}
+                          placeholder="e.g. 499"
+                          required={webinarModalForm.is_paid === 1}
+                          className="w-full pl-7 pr-3.5 py-2.5 rounded-xl bg-cyber-card border border-cyber-gold/40 text-xs text-white focus:outline-none focus:border-cyber-gold font-bold font-mono"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">This price is shown on public site badges and buttons.</p>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                        Regular / Strike Price (₹) <span className="text-slate-500 font-normal">(Optional)</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={webinarModalForm.original_price}
+                          onChange={(e) => setWebinarModalForm({ ...webinarModalForm, original_price: e.target.value })}
+                          placeholder="e.g. 1499"
+                          className="w-full pl-7 pr-3.5 py-2.5 rounded-xl bg-cyber-card border border-cyber-border text-xs text-slate-300 focus:outline-none focus:border-cyber-cyan font-mono"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">Shown crossed-out (e.g. <span className="line-through">₹1,499</span> ₹499).</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Dedicated Registration Form URL (Google Form) */}
+              <div className="p-4 rounded-2xl bg-cyber-cyan/5 border border-cyber-cyan/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-cyber-cyan uppercase tracking-wider flex items-center gap-1.5">
+                    <Link2 className="w-4 h-4" />
+                    <span>Webinar Registration Google Form URL</span>
+                  </label>
+                  {webinarModalForm.registration_form_url && (
+                    <a 
+                      href={webinarModalForm.registration_form_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-cyber-cyan hover:underline flex items-center gap-1 font-mono"
+                    >
+                      <span>Test Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  When visitors click <strong>"Register"</strong> on the website for this webinar, they will be redirected to this Google Form.
+                </p>
                 <input
                   type="url"
                   value={webinarModalForm.registration_form_url}
                   onChange={(e) => setWebinarModalForm({ ...webinarModalForm, registration_form_url: e.target.value })}
                   placeholder="https://forms.gle/..."
+                  required
                   className="w-full px-3.5 py-2.5 rounded-xl bg-cyber-dark border border-cyber-cyan/40 text-xs text-white focus:outline-none focus:border-cyber-cyan font-mono"
                 />
               </div>

@@ -17,6 +17,19 @@ export default function Home({ config, faqs, resources, webinars = [], pinnedWeb
   const activePinned = pinnedWebinar || (webinars.find(w => w.is_pinned === 1) || webinars[0] || null);
   const registrationFormUrl = activePinned?.registration_form_url || config?.registration_form_url || 'https://forms.gle/GqsnVfsERERKRVCp7';
   const webinarDate = activePinned?.date || config?.webinar_date || 'Coming Soon';
+  const webinarTitle = activePinned?.title || config?.webinar_title || 'EV CYBER ACADEMY';
+
+  // Pricing calculations
+  const isPaid = Boolean(
+    (activePinned && (activePinned.is_paid === 1 || Number(activePinned.price) > 0)) ||
+    (!activePinned && (config?.default_is_paid === '1' || Number(config?.default_price) > 0))
+  );
+  const price = activePinned?.price !== undefined 
+    ? Number(activePinned.price) 
+    : Number(config?.default_price || 0);
+  const originalPrice = activePinned?.original_price !== undefined 
+    ? Number(activePinned.original_price) 
+    : Number(config?.default_original_price || 0);
 
   const scrollToRegister = () => {
     const el = document.getElementById('register');
@@ -39,7 +52,9 @@ export default function Home({ config, faqs, resources, webinars = [], pinnedWeb
       {/* Navigation Bar */}
       <Header 
         onRegisterClick={scrollToRegister} 
-        webinarDate={webinarDate} 
+        webinarDate={webinarDate}
+        isPaid={isPaid}
+        price={price}
       />
 
       {/* Hero Section (Features Pinned Webinar) */}
@@ -81,7 +96,11 @@ export default function Home({ config, faqs, resources, webinars = [], pinnedWeb
       {/* External Registration Form Section */}
       <RegistrationForm 
         registrationFormUrl={registrationFormUrl}
-        webinarDate={webinarDate} 
+        webinarDate={webinarDate}
+        webinarTitle={webinarTitle}
+        isPaid={isPaid}
+        price={price}
+        originalPrice={originalPrice}
       />
 
       {/* LFHP Offer Section */}
@@ -99,6 +118,8 @@ export default function Home({ config, faqs, resources, webinars = [], pinnedWeb
       <MobileStickyCTA 
         onRegisterClick={scrollToRegister} 
         webinarDate={webinarDate} 
+        isPaid={isPaid}
+        price={price}
       />
 
       {/* Footer */}

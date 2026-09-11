@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, ShieldCheck, ArrowRight } from 'lucide-react';
 import logoUrl from '../assets/logo';
 
-export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' }) {
+export default function Header({ onRegisterClick, webinarDate = 'Coming Soon', isPaid = false, price = 0 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const numPrice = Number(price || 0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,10 +93,14 @@ export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' })
 
           <button
             onClick={onRegisterClick}
-            className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 font-bold text-sm hover:opacity-95 transition-all shadow-glow-cyan flex items-center gap-2"
+            className={`px-5 py-2.5 rounded-lg font-bold text-sm hover:opacity-95 transition-all flex items-center gap-2 ${
+              isPaid
+                ? 'bg-gradient-to-r from-cyber-gold via-amber-400 to-cyber-cyan text-slate-950 shadow-glow-gold'
+                : 'bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 shadow-glow-cyan'
+            }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>REGISTER FREE</span>
+            <span>{isPaid ? `REGISTER (₹${numPrice.toLocaleString('en-IN')})` : 'REGISTER FREE'}</span>
           </button>
         </div>
 
@@ -103,9 +108,13 @@ export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' })
         <div className="flex md:hidden items-center gap-2">
           <button
             onClick={onRegisterClick}
-            className="px-3.5 py-1.5 rounded-md bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 font-bold text-xs shadow-glow-cyan"
+            className={`px-3.5 py-1.5 rounded-md font-bold text-xs ${
+              isPaid
+                ? 'bg-gradient-to-r from-cyber-gold to-amber-400 text-slate-950 shadow-glow-gold'
+                : 'bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 shadow-glow-cyan'
+            }`}
           >
-            REGISTER
+            {isPaid ? `₹${numPrice}` : 'REGISTER'}
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -171,9 +180,13 @@ export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' })
           <div className="pt-2">
             <button
               onClick={() => { setMobileMenuOpen(false); onRegisterClick(); }}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-cyber-cyan to-cyber-blue text-slate-950 font-extrabold text-center text-sm shadow-glow-cyan flex items-center justify-center gap-2"
+              className={`w-full py-3 rounded-lg text-slate-950 font-extrabold text-center text-sm flex items-center justify-center gap-2 ${
+                isPaid
+                  ? 'bg-gradient-to-r from-cyber-gold via-amber-400 to-cyber-cyan shadow-glow-gold'
+                  : 'bg-gradient-to-r from-cyber-cyan to-cyber-blue shadow-glow-cyan'
+              }`}
             >
-              <span>REGISTER FREE NOW</span>
+              <span>{isPaid ? `REGISTER NOW (₹${numPrice.toLocaleString('en-IN')})` : 'REGISTER FREE NOW'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

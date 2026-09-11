@@ -15,6 +15,18 @@ export default function HeroSection({ config, pinnedWebinar, onRegisterClick, on
 
   const isPinned = Boolean(pinnedWebinar && pinnedWebinar.is_pinned === 1);
 
+  // Pricing calculation
+  const isPaid = Boolean(
+    (pinnedWebinar && (pinnedWebinar.is_paid === 1 || Number(pinnedWebinar.price) > 0)) ||
+    (!pinnedWebinar && (config?.default_is_paid === '1' || Number(config?.default_price) > 0))
+  );
+  const price = pinnedWebinar?.price !== undefined 
+    ? Number(pinnedWebinar.price) 
+    : Number(config?.default_price || 0);
+  const originalPrice = pinnedWebinar?.original_price !== undefined 
+    ? Number(pinnedWebinar.original_price) 
+    : Number(config?.default_original_price || 0);
+
   return (
     <section id="hero" className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden bg-cyber-grid">
       {/* Glow Effects */}
@@ -24,11 +36,11 @@ export default function HeroSection({ config, pinnedWebinar, onRegisterClick, on
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         
         {/* Badge Banner */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyber-card border border-cyber-cyan/40 text-cyber-cyan text-xs sm:text-sm font-semibold mb-6 shadow-glow-cyan">
+        <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-cyber-card border border-cyber-cyan/40 text-cyber-cyan text-xs sm:text-sm font-semibold mb-6 shadow-glow-cyan">
           {isPinned ? (
             <>
               <Pin className="w-4 h-4 text-cyber-cyan fill-cyber-cyan animate-pulse" />
-              <span className="font-mono uppercase tracking-wider font-bold">FEATURED / PINNED WEBINAR</span>
+              <span className="font-mono uppercase tracking-wider font-bold">FEATURED WEBINAR</span>
             </>
           ) : (
             <>
@@ -36,8 +48,22 @@ export default function HeroSection({ config, pinnedWebinar, onRegisterClick, on
               <span className="font-mono uppercase tracking-wider">{webinarName}</span>
             </>
           )}
+
           <span className="text-slate-500">•</span>
-          <span>100% Live & Interactive</span>
+
+          {isPaid ? (
+            <span className="font-mono text-cyber-gold font-bold flex items-center gap-1">
+              <span>FEE: ₹{price.toLocaleString('en-IN')}</span>
+              {originalPrice > price && (
+                <span className="line-through text-slate-400 font-normal text-[11px]">₹{originalPrice.toLocaleString('en-IN')}</span>
+              )}
+            </span>
+          ) : (
+            <span className="text-emerald-400 font-bold font-mono">100% FREE ACCESS</span>
+          )}
+
+          <span className="text-slate-500">•</span>
+          <span>Live & Interactive</span>
         </div>
 
         {/* Hero Title */}
@@ -59,10 +85,14 @@ export default function HeroSection({ config, pinnedWebinar, onRegisterClick, on
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
           <button
             onClick={onRegisterClick}
-            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-cyber-cyan via-cyber-cyan-bright to-cyber-blue text-slate-950 font-extrabold text-lg hover:scale-105 active:scale-95 transition-all shadow-glow-cyan flex items-center justify-center gap-3"
+            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-extrabold text-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 ${
+              isPaid
+                ? 'bg-gradient-to-r from-cyber-gold via-amber-400 to-cyber-cyan text-slate-950 shadow-glow-gold'
+                : 'bg-gradient-to-r from-cyber-cyan via-cyber-cyan-bright to-cyber-blue text-slate-950 shadow-glow-cyan'
+            }`}
           >
             <Shield className="w-5 h-5 fill-slate-950" />
-            <span>REGISTER FREE NOW</span>
+            <span>{isPaid ? `REGISTER NOW — ₹${price.toLocaleString('en-IN')}` : 'REGISTER FREE NOW'}</span>
             <ExternalLink className="w-4 h-4" />
           </button>
 
@@ -103,11 +133,17 @@ export default function HeroSection({ config, pinnedWebinar, onRegisterClick, on
           </div>
 
           <div className="glass-card p-4 rounded-xl text-center">
-            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <div className={`w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center ${
+              isPaid ? 'bg-cyber-gold/10 text-cyber-gold' : 'bg-emerald-500/10 text-emerald-400'
+            }`}>
               <Award className="w-4 h-4" />
             </div>
-            <div className="text-xs text-slate-400 font-medium">Prerequisites</div>
-            <div className="text-xs sm:text-sm font-bold text-emerald-400 mt-0.5">Beginner Friendly</div>
+            <div className="text-xs text-slate-400 font-medium">Registration Fee</div>
+            <div className={`text-xs sm:text-sm font-bold mt-0.5 font-mono ${
+              isPaid ? 'text-cyber-gold' : 'text-emerald-400'
+            }`}>
+              {isPaid ? `₹${price.toLocaleString('en-IN')}` : '100% FREE'}
+            </div>
           </div>
 
           <div className="glass-card p-4 rounded-xl text-center col-span-2 sm:col-span-1">

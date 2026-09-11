@@ -200,6 +200,9 @@ router.post('/admin/webinars', authenticateToken, async (req, res) => {
       thumbnail_url = '',
       youtube_url = '',
       registration_form_url = DEFAULT_REGISTRATION_URL,
+      is_paid = 0,
+      price = 0,
+      original_price = 0,
       status = 'Published',
       is_pinned = 0,
       sort_order = 0
@@ -210,6 +213,9 @@ router.post('/admin/webinars', authenticateToken, async (req, res) => {
     }
 
     const pinVal = is_pinned ? 1 : 0;
+    const paidVal = is_paid ? 1 : 0;
+    const priceVal = parseFloat(price) || 0;
+    const origPriceVal = parseFloat(original_price) || 0;
     const normalizedStatus = (status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published';
 
     // Single Pinned Rule: If pinning this new webinar, unpin all other webinars
@@ -218,8 +224,8 @@ router.post('/admin/webinars', authenticateToken, async (req, res) => {
     }
 
     const result = await db.run(
-      `INSERT INTO webinars (title, short_description, date, start_time, end_time, thumbnail_url, youtube_url, registration_form_url, status, is_pinned, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO webinars (title, short_description, date, start_time, end_time, thumbnail_url, youtube_url, registration_form_url, is_paid, price, original_price, status, is_pinned, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title.trim(),
         short_description.trim(),
@@ -229,6 +235,9 @@ router.post('/admin/webinars', authenticateToken, async (req, res) => {
         thumbnail_url.trim(),
         youtube_url.trim(),
         registration_form_url.trim() || DEFAULT_REGISTRATION_URL,
+        paidVal,
+        priceVal,
+        origPriceVal,
         normalizedStatus,
         pinVal,
         sort_order || 0
@@ -257,6 +266,9 @@ router.put('/admin/webinars/:id', authenticateToken, async (req, res) => {
       thumbnail_url,
       youtube_url,
       registration_form_url,
+      is_paid,
+      price,
+      original_price,
       status,
       is_pinned,
       sort_order
@@ -273,6 +285,10 @@ router.put('/admin/webinars/:id', authenticateToken, async (req, res) => {
     }
 
     const pinVal = is_pinned !== undefined ? (is_pinned ? 1 : 0) : existing.is_pinned;
+    const paidVal = is_paid !== undefined ? (is_paid ? 1 : 0) : (existing.is_paid || 0);
+    const priceVal = price !== undefined ? (parseFloat(price) || 0) : (existing.price || 0);
+    const origPriceVal = original_price !== undefined ? (parseFloat(original_price) || 0) : (existing.original_price || 0);
+
     const normalizedStatus = status !== undefined
       ? ((status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published')
       : existing.status;
@@ -292,6 +308,9 @@ router.put('/admin/webinars/:id', authenticateToken, async (req, res) => {
          thumbnail_url = ?,
          youtube_url = ?,
          registration_form_url = ?,
+         is_paid = ?,
+         price = ?,
+         original_price = ?,
          status = ?,
          is_pinned = ?,
          sort_order = ?
@@ -305,6 +324,9 @@ router.put('/admin/webinars/:id', authenticateToken, async (req, res) => {
         thumbnail_url !== undefined ? thumbnail_url.trim() : existing.thumbnail_url,
         youtube_url !== undefined ? youtube_url.trim() : existing.youtube_url,
         registration_form_url !== undefined ? registration_form_url.trim() : existing.registration_form_url,
+        paidVal,
+        priceVal,
+        origPriceVal,
         normalizedStatus,
         pinVal,
         sort_order !== undefined ? sort_order : existing.sort_order,
@@ -425,6 +447,9 @@ router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
       youtube_url,
       founder_title,
       registration_form_url,
+      default_is_paid,
+      default_price,
+      default_original_price,
       lfhp_original_price,
       lfhp_offer_price,
       lfhp_title,
@@ -447,6 +472,9 @@ router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
       youtube_url,
       founder_title,
       registration_form_url,
+      default_is_paid: default_is_paid !== undefined ? String(default_is_paid) : undefined,
+      default_price: default_price !== undefined ? String(default_price) : undefined,
+      default_original_price: default_original_price !== undefined ? String(default_original_price) : undefined,
       lfhp_original_price,
       lfhp_offer_price,
       lfhp_title,

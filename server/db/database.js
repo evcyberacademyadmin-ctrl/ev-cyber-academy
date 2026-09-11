@@ -56,12 +56,32 @@ async function initDatabase(db) {
       thumbnail_url TEXT DEFAULT '',
       youtube_url TEXT DEFAULT '',
       registration_form_url TEXT DEFAULT 'https://forms.gle/GqsnVfsERERKRVCp7',
+      is_paid INTEGER DEFAULT 0,         -- 0 (Free) | 1 (Paid)
+      price REAL DEFAULT 0,              -- Fee amount in INR (e.g. 499)
+      original_price REAL DEFAULT 0,     -- Optional original/strike price (e.g. 1499)
       status TEXT DEFAULT 'Published',   -- 'Draft' | 'Published'
       is_pinned INTEGER DEFAULT 0,       -- 1 (Pinned) | 0 (Unpinned)
       sort_order INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Safe migration for existing SQLite databases
+  try {
+    const tableInfo = await db.all("PRAGMA table_info(webinars)");
+    const columnNames = tableInfo.map(c => c.name);
+    if (!columnNames.includes('is_paid')) {
+      await db.exec("ALTER TABLE webinars ADD COLUMN is_paid INTEGER DEFAULT 0");
+    }
+    if (!columnNames.includes('price')) {
+      await db.exec("ALTER TABLE webinars ADD COLUMN price REAL DEFAULT 0");
+    }
+    if (!columnNames.includes('original_price')) {
+      await db.exec("ALTER TABLE webinars ADD COLUMN original_price REAL DEFAULT 0");
+    }
+  } catch (err) {
+    console.warn('[DB] Migration check on webinars table:', err.message);
+  }
 
   // 4. FAQs table
   await db.exec(`
@@ -123,6 +143,9 @@ async function initDatabase(db) {
     { key: 'youtube_url', value: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
     { key: 'founder_title', value: 'Before You Register, Watch This' },
     { key: 'registration_form_url', value: defaultRegistrationUrl },
+    { key: 'default_is_paid', value: '0' },
+    { key: 'default_price', value: '0' },
+    { key: 'default_original_price', value: '0' },
     { key: 'lfhp_original_price', value: '15000' },
     { key: 'lfhp_offer_price', value: '4000' },
     { key: 'lfhp_title', value: 'LFHP — Learn the Fundamentals of Hacking' },
@@ -166,8 +189,8 @@ async function initDatabase(db) {
   const webinarCount = await db.get('SELECT COUNT(*) as count FROM webinars');
   if (!webinarCount || webinarCount.count === 0) {
     await db.run(`
-      INSERT INTO webinars (title, short_description, date, start_time, end_time, youtube_url, registration_form_url, status, is_pinned, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'Published', 1, 1)
+      INSERT INTO webinars (title, short_description, date, start_time, end_time, youtube_url, registration_form_url, is_paid, price, original_price, status, is_pinned, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 'Published', 1, 1)
     `, [
       '2-Day FREE Cyber Security Webinar',
       'Learn the fundamentals of Cyber Security, networking, reconnaissance and practical security concepts in a beginner-friendly 2-day live webinar.',
