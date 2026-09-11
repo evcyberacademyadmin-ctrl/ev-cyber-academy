@@ -20,7 +20,13 @@ async function getDb() {
 }
 
 async function initDatabase(db) {
-  // Site config table
+  // Ensure no lead storage tables exist in the database
+  await db.exec(`
+    DROP TABLE IF EXISTS registrations;
+    DROP TABLE IF EXISTS leads;
+  `);
+
+  // 1. Site config table (global settings, pricing, default URLs)
   await db.exec(`
     CREATE TABLE IF NOT EXISTS site_config (
       key TEXT PRIMARY KEY,
@@ -28,7 +34,7 @@ async function initDatabase(db) {
     )
   `);
 
-  // Admin users table
+  // 2. Admin users table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,24 +44,26 @@ async function initDatabase(db) {
     )
   `);
 
-  // Registrations table
+  // 3. Multi-Webinar Management table
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS registrations (
+    CREATE TABLE IF NOT EXISTS webinars (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      full_name TEXT NOT NULL,
-      whatsapp TEXT NOT NULL,
-      email TEXT NOT NULL,
-      college_company TEXT,
-      current_status TEXT,
-      experience TEXT,
-      main_goal TEXT,
-      status TEXT DEFAULT 'New',
-      notes TEXT DEFAULT '',
+      title TEXT NOT NULL,
+      short_description TEXT DEFAULT '',
+      date TEXT DEFAULT 'Coming Soon',
+      start_time TEXT DEFAULT '7:00 PM',
+      end_time TEXT DEFAULT '8:00 PM IST',
+      thumbnail_url TEXT DEFAULT '',
+      youtube_url TEXT DEFAULT '',
+      registration_form_url TEXT DEFAULT 'https://forms.gle/GqsnVfsERERKRVCp7',
+      status TEXT DEFAULT 'Published',   -- 'Draft' | 'Published'
+      is_pinned INTEGER DEFAULT 0,       -- 1 (Pinned) | 0 (Unpinned)
+      sort_order INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  // FAQs table
+  // 4. FAQs table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS faqs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +73,7 @@ async function initDatabase(db) {
     )
   `);
 
-  // Resources / Toolkit table
+  // 5. Resources / Toolkit table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS resources (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,13 +85,13 @@ async function initDatabase(db) {
     )
   `);
 
-  // Dynamic Registration Form Fields Table
+  // 6. Dynamic Form Fields / Form Builder table
   await db.exec(`
     CREATE TABLE IF NOT EXISTS form_fields (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       field_name TEXT UNIQUE NOT NULL,
       label TEXT NOT NULL,
-      type TEXT NOT NULL, -- text, tel, email, select
+      type TEXT NOT NULL,
       placeholder TEXT DEFAULT '',
       options_json TEXT DEFAULT '[]',
       required INTEGER DEFAULT 1,
@@ -92,18 +100,18 @@ async function initDatabase(db) {
     )
   `);
 
-  // Seed default admin user
+  // Seed default admin user (vimalthehacker)
   const adminUser = await db.get('SELECT * FROM users WHERE username = ?', ['vimalthehacker']);
   if (!adminUser) {
-    // Remove the old default admin if it exists
     await db.run('DELETE FROM users WHERE username = ?', ['admin']);
-    
     const hashed = await bcrypt.hash('adminsshvimal-2008', 10);
     await db.run('INSERT INTO users (username, password_hash) VALUES (?, ?)', ['vimalthehacker', hashed]);
     console.log('[DB] Seeded admin user (vimalthehacker)');
   }
 
   // Seed site configs if empty
+  const defaultRegistrationUrl = process.env.REGISTRATION_FORM_URL || 'https://forms.gle/GqsnVfsERERKRVCp7';
+
   const defaultConfigs = [
     { key: 'webinar_name', value: 'EV CYBER ACADEMY' },
     { key: 'theme_mode', value: 'cyber-dark' },
@@ -114,6 +122,7 @@ async function initDatabase(db) {
     { key: 'webinar_time', value: '7:00 PM – 8:00 PM IST' },
     { key: 'youtube_url', value: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
     { key: 'founder_title', value: 'Before You Register, Watch This' },
+    { key: 'registration_form_url', value: defaultRegistrationUrl },
     { key: 'lfhp_original_price', value: '15000' },
     { key: 'lfhp_offer_price', value: '4000' },
     { key: 'lfhp_title', value: 'LFHP — Learn the Fundamentals of Hacking' },
@@ -147,9 +156,33 @@ async function initDatabase(db) {
     }
   }
 
+  // Ensure registration_form_url is set even if site_config already existed
+  const regUrlEntry = await db.get('SELECT key FROM site_config WHERE key = ?', ['registration_form_url']);
+  if (!regUrlEntry) {
+    await db.run('INSERT INTO site_config (key, value) VALUES (?, ?)', ['registration_form_url', defaultRegistrationUrl]);
+  }
+
+  // Seed default initial pinned webinar if webinars table is empty
+  const webinarCount = await db.get('SELECT COUNT(*) as count FROM webinars');
+  if (!webinarCount || webinarCount.count === 0) {
+    await db.run(`
+      INSERT INTO webinars (title, short_description, date, start_time, end_time, youtube_url, registration_form_url, status, is_pinned, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'Published', 1, 1)
+    `, [
+      '2-Day FREE Cyber Security Webinar',
+      'Learn the fundamentals of Cyber Security, networking, reconnaissance and practical security concepts in a beginner-friendly 2-day live webinar.',
+      'Coming Soon',
+      '7:00 PM',
+      '8:00 PM IST',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      defaultRegistrationUrl
+    ]);
+    console.log('[DB] Seeded initial pinned webinar (2-Day FREE Cyber Security Webinar)');
+  }
+
   // Seed FAQs if empty
   const faqCount = await db.get('SELECT COUNT(*) as count FROM faqs');
-  if (faqCount.count === 0) {
+  if (!faqCount || faqCount.count === 0) {
     const defaultFaqs = [
       { question: 'Is this webinar really free?', answer: 'Yes! EV CYBER ACADEMY is 100% free for 2 days. There are no hidden fees or payment required to attend.', sort_order: 1 },
       { question: 'Do I need Cyber Security experience?', answer: 'No previous experience is required! The webinar is designed specifically for complete beginners, college students, and anyone starting from scratch.', sort_order: 2 },
@@ -167,7 +200,7 @@ async function initDatabase(db) {
 
   // Seed Resources if empty
   const resCount = await db.get('SELECT COUNT(*) as count FROM resources');
-  if (resCount.count === 0) {
+  if (!resCount || resCount.count === 0) {
     const defaultResources = [
       { title: 'IP / DNS Recon Tool', description: 'Essential beginner scripts for domain and IP reconnaissance.', type: 'tool', badge: 'Included Free', sort_order: 1 },
       { title: 'Basic Port Scanner', description: 'Lightweight scanner to understand open ports and active services.', type: 'tool', badge: 'Included Free', sort_order: 2 },
@@ -182,78 +215,15 @@ async function initDatabase(db) {
 
   // Seed Dynamic Form Fields if empty
   const fieldsCount = await db.get('SELECT COUNT(*) as count FROM form_fields');
-  if (fieldsCount.count === 0) {
+  if (!fieldsCount || fieldsCount.count === 0) {
     const defaultFields = [
-      {
-        field_name: 'full_name',
-        label: 'Full Name',
-        type: 'text',
-        placeholder: 'e.g. Rahul Sharma',
-        options_json: '[]',
-        required: 1,
-        enabled: 1,
-        sort_order: 1
-      },
-      {
-        field_name: 'whatsapp',
-        label: 'WhatsApp Number',
-        type: 'tel',
-        placeholder: 'e.g. 9876543210',
-        options_json: '[]',
-        required: 1,
-        enabled: 1,
-        sort_order: 2
-      },
-      {
-        field_name: 'email',
-        label: 'Email Address',
-        type: 'email',
-        placeholder: 'e.g. rahul@example.com',
-        options_json: '[]',
-        required: 1,
-        enabled: 1,
-        sort_order: 3
-      },
-      {
-        field_name: 'college_company',
-        label: 'College / Company',
-        type: 'text',
-        placeholder: 'e.g. ABC Institute of Tech / Self',
-        options_json: '[]',
-        required: 1,
-        enabled: 1,
-        sort_order: 4
-      },
-      {
-        field_name: 'current_status',
-        label: 'Current Status',
-        type: 'select',
-        placeholder: 'Select current status',
-        options_json: JSON.stringify(['Student', 'Working', 'Job Seeker', 'Other']),
-        required: 1,
-        enabled: 1,
-        sort_order: 5
-      },
-      {
-        field_name: 'experience',
-        label: 'Cyber Security Experience',
-        type: 'select',
-        placeholder: 'Select experience level',
-        options_json: JSON.stringify(['Complete Beginner', 'Basic Knowledge', 'Already Learning']),
-        required: 1,
-        enabled: 1,
-        sort_order: 6
-      },
-      {
-        field_name: 'main_goal',
-        label: 'Main Goal',
-        type: 'select',
-        placeholder: 'Select main goal',
-        options_json: JSON.stringify(['Learn Cyber Security', 'Ethical Hacking', 'Pentesting', 'Career / Job', 'College Learning', 'Exploring']),
-        required: 1,
-        enabled: 1,
-        sort_order: 7
-      }
+      { field_name: 'full_name', label: 'Full Name', type: 'text', placeholder: 'e.g. Rahul Sharma', options_json: '[]', required: 1, enabled: 1, sort_order: 1 },
+      { field_name: 'whatsapp', label: 'WhatsApp Number', type: 'tel', placeholder: 'e.g. 9876543210', options_json: '[]', required: 1, enabled: 1, sort_order: 2 },
+      { field_name: 'email', label: 'Email Address', type: 'email', placeholder: 'e.g. rahul@example.com', options_json: '[]', required: 1, enabled: 1, sort_order: 3 },
+      { field_name: 'college_company', label: 'College / Company', type: 'text', placeholder: 'e.g. ABC Institute / Self', options_json: '[]', required: 1, enabled: 1, sort_order: 4 },
+      { field_name: 'current_status', label: 'Current Status', type: 'select', placeholder: 'Select current status', options_json: JSON.stringify(['Student', 'Working', 'Job Seeker', 'Other']), required: 1, enabled: 1, sort_order: 5 },
+      { field_name: 'experience', label: 'Cyber Security Experience', type: 'select', placeholder: 'Select experience level', options_json: JSON.stringify(['Complete Beginner', 'Basic Knowledge', 'Already Learning']), required: 1, enabled: 1, sort_order: 6 },
+      { field_name: 'main_goal', label: 'Main Goal', type: 'select', placeholder: 'Select main goal', options_json: JSON.stringify(['Learn Cyber Security', 'Ethical Hacking', 'Pentesting', 'Career / Job', 'College Learning', 'Exploring']), required: 1, enabled: 1, sort_order: 7 }
     ];
     for (const f of defaultFields) {
       await db.run(
@@ -264,7 +234,7 @@ async function initDatabase(db) {
     }
   }
 
-  console.log('[DB] Database tables initialized successfully.');
+  console.log('[DB] Database tables (site_config, users, webinars, faqs, resources, form_fields) initialized successfully.');
 }
 
 module.exports = { getDb };

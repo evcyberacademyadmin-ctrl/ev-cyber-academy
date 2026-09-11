@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from '../components/Header';
 import HeroSection from '../components/HeroSection';
+import WebinarList from '../components/WebinarList';
 import FounderVideo from '../components/FounderVideo';
 import WhatYouWillLearn from '../components/WhatYouWillLearn';
 import FreeToolkit from '../components/FreeToolkit';
@@ -11,7 +12,12 @@ import FAQSection from '../components/FAQSection';
 import MobileStickyCTA from '../components/MobileStickyCTA';
 import Footer from '../components/Footer';
 
-export default function Home({ config, faqs, resources, formFields, onRegisterSuccess, onNavigateAdmin }) {
+export default function Home({ config, faqs, resources, webinars = [], pinnedWebinar = null, onNavigateAdmin }) {
+  // Pinned webinar or fallback registration link
+  const activePinned = pinnedWebinar || (webinars.find(w => w.is_pinned === 1) || webinars[0] || null);
+  const registrationFormUrl = activePinned?.registration_form_url || config?.registration_form_url || 'https://forms.gle/GqsnVfsERERKRVCp7';
+  const webinarDate = activePinned?.date || config?.webinar_date || 'Coming Soon';
+
   const scrollToRegister = () => {
     const el = document.getElementById('register');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -22,8 +28,8 @@ export default function Home({ config, faqs, resources, formFields, onRegisterSu
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const scrollToLFHP = () => {
-    const el = document.getElementById('lfhp');
+  const scrollToAllWebinars = () => {
+    const el = document.getElementById('all-webinars');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -33,17 +39,24 @@ export default function Home({ config, faqs, resources, formFields, onRegisterSu
       {/* Navigation Bar */}
       <Header 
         onRegisterClick={scrollToRegister} 
-        webinarDate={config?.webinar_date} 
+        webinarDate={webinarDate} 
       />
 
-      {/* Hero Section */}
+      {/* Hero Section (Features Pinned Webinar) */}
       <HeroSection 
         config={config} 
+        pinnedWebinar={activePinned}
         onRegisterClick={scrollToRegister} 
         onWatchVideoClick={scrollToVideo} 
       />
 
-      {/* Founder Video Section */}
+      {/* All Published Webinars & Workshops Listing */}
+      <WebinarList 
+        webinars={webinars}
+        pinnedWebinar={activePinned}
+      />
+
+      {/* Founder Video Section (YouTube Video Rendering Intact) */}
       <FounderVideo 
         config={config} 
         onRegisterClick={scrollToRegister} 
@@ -65,11 +78,10 @@ export default function Home({ config, faqs, resources, formFields, onRegisterSu
         onRegisterClick={scrollToRegister} 
       />
 
-      {/* Registration Form Section */}
+      {/* External Registration Form Section */}
       <RegistrationForm 
-        formFields={formFields} 
-        webinarDate={config?.webinar_date} 
-        onSuccess={onRegisterSuccess} 
+        registrationFormUrl={registrationFormUrl}
+        webinarDate={webinarDate} 
       />
 
       {/* LFHP Offer Section */}
@@ -86,7 +98,7 @@ export default function Home({ config, faqs, resources, formFields, onRegisterSu
       {/* Mobile Sticky CTA */}
       <MobileStickyCTA 
         onRegisterClick={scrollToRegister} 
-        webinarDate={config?.webinar_date} 
+        webinarDate={webinarDate} 
       />
 
       {/* Footer */}

@@ -5,21 +5,31 @@ const jwt = require('jsonwebtoken');
 const { getDb } = require('../db/database');
 const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
+// Default configurable registration form link
+const DEFAULT_REGISTRATION_URL = process.env.REGISTRATION_FORM_URL || 'https://forms.gle/GqsnVfsERERKRVCp7';
+
 // ==========================================
 // PUBLIC ENDPOINTS
 // ==========================================
 
-// Get public website configuration, content, resources, faqs, form schema
+// Get public website configuration, content, resources, faqs, form schema, and published webinars
 router.get('/public/config', async (req, res) => {
   try {
     const db = await getDb();
     
     // Get all site configs
     const rows = await db.all('SELECT key, value FROM site_config');
-    const config = {};
+    const config = {
+      registration_form_url: DEFAULT_REGISTRATION_URL
+    };
     rows.forEach(r => {
       config[r.key] = r.value;
     });
+
+    // Ensure fallback registration form URL
+    if (!config.registration_form_url) {
+      config.registration_form_url = DEFAULT_REGISTRATION_URL;
+    }
 
     // Parse JSON fields safely
     if (config.day1_topics) {
@@ -35,20 +45,30 @@ router.get('/public/config', async (req, res) => {
     // Get Resources
     const resources = await db.all('SELECT * FROM resources ORDER BY sort_order ASC, id ASC');
 
-    // Get enabled form fields
-    const formFieldsRaw = await db.all('SELECT * FROM form_fields WHERE enabled = 1 ORDER BY sort_order ASC, id ASC');
+    // Get Form Fields
+    const formFieldsRaw = await db.all('SELECT * FROM form_fields ORDER BY sort_order ASC, id ASC');
     const formFields = formFieldsRaw.map(f => ({
       ...f,
       options: f.options_json ? JSON.parse(f.options_json) : [],
-      required: Boolean(f.required)
+      required: Boolean(f.required),
+      enabled: Boolean(f.enabled)
     }));
+
+    // Get Published Webinars (Pinned first)
+    const publishedWebinars = await db.all(
+      "SELECT * FROM webinars WHERE LOWER(status) = 'published' ORDER BY is_pinned DESC, sort_order ASC, id DESC"
+    );
+
+    const pinnedWebinar = publishedWebinars.find(w => w.is_pinned === 1) || publishedWebinars[0] || null;
 
     res.json({
       success: true,
       config,
       faqs,
       resources,
-      formFields
+      formFields,
+      webinars: publishedWebinars,
+      pinnedWebinar
     });
   } catch (err) {
     console.error('Error fetching public config:', err);
@@ -56,76 +76,57 @@ router.get('/public/config', async (req, res) => {
   }
 });
 
-// Submit FREE Webinar Registration
+// Get Public Published Webinars
+router.get('/public/webinars', async (req, res) => {
+  try {
+    const db = await getDb();
+    const publishedWebinars = await db.all(
+      "SELECT * FROM webinars WHERE LOWER(status) = 'published' ORDER BY is_pinned DESC, sort_order ASC, id DESC"
+    );
+    const pinnedWebinar = publishedWebinars.find(w => w.is_pinned === 1) || publishedWebinars[0] || null;
+
+    res.json({
+      success: true,
+      webinars: publishedWebinars,
+      pinnedWebinar
+    });
+  } catch (err) {
+    console.error('Error fetching webinars:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch webinars' });
+  }
+});
+
+// Registration Action (Directs to external form without storing leads in database)
 router.post('/public/register', async (req, res) => {
   try {
     const db = await getDb();
-    const body = req.body || {};
+    const { webinar_id } = req.body || {};
 
-    const full_name = (body.full_name || '').trim();
-    const whatsapp = (body.whatsapp || '').trim();
-    const email = (body.email || '').trim();
-    const college_company = (body.college_company || '').trim();
-    const current_status = (body.current_status || '').trim();
-    const experience = (body.experience || '').trim();
-    const main_goal = (body.main_goal || '').trim();
+    let targetUrl = DEFAULT_REGISTRATION_URL;
 
-    // Server-side validation
-    if (!full_name || full_name.length < 2) {
-      return res.status(400).json({ success: false, error: 'Please enter a valid full name (at least 2 characters).' });
+    if (webinar_id) {
+      const webinar = await db.get('SELECT registration_form_url FROM webinars WHERE id = ?', [webinar_id]);
+      if (webinar && webinar.registration_form_url) {
+        targetUrl = webinar.registration_form_url;
+      }
+    } else {
+      const cfg = await db.get('SELECT value FROM site_config WHERE key = ?', ['registration_form_url']);
+      if (cfg && cfg.value) {
+        targetUrl = cfg.value;
+      }
     }
 
-    // Validate WhatsApp (10-15 digits)
-    const cleanWhatsapp = whatsapp.replace(/[^0-9]/g, '');
-    if (!cleanWhatsapp || cleanWhatsapp.length < 10 || cleanWhatsapp.length > 15) {
-      return res.status(400).json({ success: false, error: 'Please enter a valid WhatsApp / Mobile number (10-15 digits).' });
-    }
-
-    // Validate Email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
-    }
-
-    // Check for duplicate registration (same WhatsApp or Email within last 24h)
-    const existing = await db.get(
-      'SELECT id, created_at FROM registrations WHERE whatsapp = ? OR email = ? ORDER BY id DESC LIMIT 1',
-      [cleanWhatsapp, email]
-    );
-
-    if (existing) {
-      // Return existing registration ID so user is shown success screen
-      return res.json({
-        success: true,
-        alreadyRegistered: true,
-        message: 'You are already registered with this WhatsApp or Email!',
-        registration: {
-          id: existing.id,
-          full_name,
-          whatsapp: cleanWhatsapp,
-          email,
-          created_at: existing.created_at
-        }
-      });
-    }
-
-    // Insert registration
-    const result = await db.run(
-      `INSERT INTO registrations (full_name, whatsapp, email, college_company, current_status, experience, main_goal, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'New')`,
-      [full_name, cleanWhatsapp, email, college_company, current_status, experience, main_goal]
-    );
-
-    const newRecord = await db.get('SELECT * FROM registrations WHERE id = ?', [result.lastID]);
-
-    res.status(201).json({
+    res.json({
       success: true,
-      message: 'Registration successful!',
-      registration: newRecord
+      message: 'Directing to external registration form.',
+      redirectUrl: targetUrl
     });
   } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ success: false, error: 'Failed to process registration. Please try again.' });
+    console.error('Registration link fetch error:', err);
+    res.json({
+      success: true,
+      redirectUrl: DEFAULT_REGISTRATION_URL
+    });
   }
 });
 
@@ -171,121 +172,236 @@ router.post('/admin/login', async (req, res) => {
 
 
 // ==========================================
-// ADMIN DASHBOARD & REGISTRATIONS
+// ADMIN MULTI-WEBINAR MANAGEMENT
 // ==========================================
 
-// Get Dashboard Stats
-router.get('/admin/stats', authenticateToken, async (req, res) => {
+// 1. List all webinars (Draft & Published)
+router.get('/admin/webinars', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
-
-    const totalReg = await db.get('SELECT COUNT(*) as count FROM registrations');
-    
-    // Today's count
-    const todayReg = await db.get(
-      "SELECT COUNT(*) as count FROM registrations WHERE DATE(created_at) = DATE('now')"
-    );
-
-    // Beginners count
-    const beginnerReg = await db.get(
-      "SELECT COUNT(*) as count FROM registrations WHERE experience LIKE '%Beginner%'"
-    );
-
-    // Students count
-    const studentReg = await db.get(
-      "SELECT COUNT(*) as count FROM registrations WHERE current_status LIKE '%Student%'"
-    );
-
-    // LFHP Interested leads
-    const lfhpLeads = await db.get(
-      "SELECT COUNT(*) as count FROM registrations WHERE status = 'Interested' OR status = 'LFHP Offered' OR status = 'Converted'"
-    );
-
-    res.json({
-      success: true,
-      stats: {
-        total: totalReg.count,
-        today: todayReg.count,
-        beginners: beginnerReg.count,
-        students: studentReg.count,
-        lfhpInterested: lfhpLeads.count
-      }
-    });
+    const webinars = await db.all('SELECT * FROM webinars ORDER BY is_pinned DESC, sort_order ASC, id DESC');
+    res.json({ success: true, count: webinars.length, webinars });
   } catch (err) {
-    console.error('Stats error:', err);
-    res.status(500).json({ success: false, error: 'Failed to fetch statistics' });
+    console.error('Fetch all webinars error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch webinars' });
   }
 });
 
-// Get Registrations List (with search, filter, pagination)
-router.get('/admin/registrations', authenticateToken, async (req, res) => {
+// 2. Create new webinar
+router.post('/admin/webinars', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
-    const { search = '', status = 'All' } = req.query;
+    const {
+      title,
+      short_description = '',
+      date = 'Coming Soon',
+      start_time = '7:00 PM',
+      end_time = '8:00 PM IST',
+      thumbnail_url = '',
+      youtube_url = '',
+      registration_form_url = DEFAULT_REGISTRATION_URL,
+      status = 'Published',
+      is_pinned = 0,
+      sort_order = 0
+    } = req.body || {};
 
-    let query = 'SELECT * FROM registrations WHERE 1=1';
-    const params = [];
-
-    if (status && status !== 'All') {
-      query += ' AND status = ?';
-      params.push(status);
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, error: 'Webinar Title is required' });
     }
 
-    if (search && search.trim()) {
-      const term = `%${search.trim()}%`;
-      query += ' AND (full_name LIKE ? OR whatsapp LIKE ? OR email LIKE ? OR college_company LIKE ? OR main_goal LIKE ?)';
-      params.push(term, term, term, term, term);
+    const pinVal = is_pinned ? 1 : 0;
+    const normalizedStatus = (status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published';
+
+    // Single Pinned Rule: If pinning this new webinar, unpin all other webinars
+    if (pinVal === 1) {
+      await db.run('UPDATE webinars SET is_pinned = 0');
     }
 
-    query += ' ORDER BY id DESC';
+    const result = await db.run(
+      `INSERT INTO webinars (title, short_description, date, start_time, end_time, thumbnail_url, youtube_url, registration_form_url, status, is_pinned, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title.trim(),
+        short_description.trim(),
+        date.trim() || 'Coming Soon',
+        start_time.trim() || '7:00 PM',
+        end_time.trim() || '8:00 PM IST',
+        thumbnail_url.trim(),
+        youtube_url.trim(),
+        registration_form_url.trim() || DEFAULT_REGISTRATION_URL,
+        normalizedStatus,
+        pinVal,
+        sort_order || 0
+      ]
+    );
 
-    const registrations = await db.all(query, params);
-    res.json({ success: true, count: registrations.length, registrations });
+    const newWebinar = await db.get('SELECT * FROM webinars WHERE id = ?', [result.lastID]);
+    res.status(201).json({ success: true, id: newWebinar.id, webinar: newWebinar });
   } catch (err) {
-    console.error('Fetch registrations error:', err);
-    res.status(500).json({ success: false, error: 'Failed to fetch registrations' });
+    console.error('Create webinar error:', err);
+    res.status(500).json({ success: false, error: 'Failed to create webinar' });
   }
 });
 
-// Update Registration Status / Notes
-router.patch('/admin/registrations/:id', authenticateToken, async (req, res) => {
+// 3. Edit / Update existing webinar
+router.put('/admin/webinars/:id', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
     const { id } = req.params;
-    const { status, notes } = req.body;
+    const {
+      title,
+      short_description,
+      date,
+      start_time,
+      end_time,
+      thumbnail_url,
+      youtube_url,
+      registration_form_url,
+      status,
+      is_pinned,
+      sort_order
+    } = req.body || {};
 
-    const existing = await db.get('SELECT * FROM registrations WHERE id = ?', [id]);
+    const existing = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
     if (!existing) {
-      return res.status(404).json({ success: false, error: 'Registration not found' });
+      return res.status(404).json({ success: false, error: 'Webinar not found' });
     }
 
-    const newStatus = status || existing.status;
-    const newNotes = notes !== undefined ? notes : existing.notes;
+    const updatedTitle = title !== undefined ? title.trim() : existing.title;
+    if (!updatedTitle) {
+      return res.status(400).json({ success: false, error: 'Webinar Title cannot be empty' });
+    }
+
+    const pinVal = is_pinned !== undefined ? (is_pinned ? 1 : 0) : existing.is_pinned;
+    const normalizedStatus = status !== undefined
+      ? ((status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published')
+      : existing.status;
+
+    // Single Pinned Rule: If pinning, unpin any other webinar
+    if (pinVal === 1) {
+      await db.run('UPDATE webinars SET is_pinned = 0 WHERE id != ?', [id]);
+    }
 
     await db.run(
-      'UPDATE registrations SET status = ?, notes = ? WHERE id = ?',
-      [newStatus, newNotes, id]
+      `UPDATE webinars SET
+         title = ?,
+         short_description = ?,
+         date = ?,
+         start_time = ?,
+         end_time = ?,
+         thumbnail_url = ?,
+         youtube_url = ?,
+         registration_form_url = ?,
+         status = ?,
+         is_pinned = ?,
+         sort_order = ?
+       WHERE id = ?`,
+      [
+        updatedTitle,
+        short_description !== undefined ? short_description.trim() : existing.short_description,
+        date !== undefined ? date.trim() : existing.date,
+        start_time !== undefined ? start_time.trim() : existing.start_time,
+        end_time !== undefined ? end_time.trim() : existing.end_time,
+        thumbnail_url !== undefined ? thumbnail_url.trim() : existing.thumbnail_url,
+        youtube_url !== undefined ? youtube_url.trim() : existing.youtube_url,
+        registration_form_url !== undefined ? registration_form_url.trim() : existing.registration_form_url,
+        normalizedStatus,
+        pinVal,
+        sort_order !== undefined ? sort_order : existing.sort_order,
+        id
+      ]
     );
 
-    const updated = await db.get('SELECT * FROM registrations WHERE id = ?', [id]);
-    res.json({ success: true, registration: updated });
+    const updated = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
+    res.json({ success: true, id: updated.id, webinar: updated });
   } catch (err) {
-    console.error('Update registration error:', err);
-    res.status(500).json({ success: false, error: 'Failed to update registration' });
+    console.error('Update webinar error:', err);
+    res.status(500).json({ success: false, error: 'Failed to update webinar' });
   }
 });
 
-// Delete Registration
-router.delete('/admin/registrations/:id', authenticateToken, async (req, res) => {
+// 4. Pin / Unpin webinar (1-click action)
+router.patch('/admin/webinars/:id/pin', authenticateToken, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { id } = req.params;
+    const { is_pinned } = req.body;
+
+    const existing = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Webinar not found' });
+    }
+
+    const targetPin = is_pinned !== undefined ? (is_pinned ? 1 : 0) : (existing.is_pinned === 1 ? 0 : 1);
+
+    if (targetPin === 1) {
+      // Unpin all other webinars first
+      await db.run('UPDATE webinars SET is_pinned = 0 WHERE id != ?', [id]);
+      await db.run('UPDATE webinars SET is_pinned = 1 WHERE id = ?', [id]);
+    } else {
+      await db.run('UPDATE webinars SET is_pinned = 0 WHERE id = ?', [id]);
+    }
+
+    const updated = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
+    res.json({
+      success: true,
+      message: targetPin === 1 ? 'Webinar pinned to top' : 'Webinar unpinned',
+      id: updated.id,
+      webinar: updated
+    });
+  } catch (err) {
+    console.error('Pin webinar error:', err);
+    res.status(500).json({ success: false, error: 'Failed to change pin status' });
+  }
+});
+
+// 5. Publish / Unpublish webinar (1-click action)
+router.patch('/admin/webinars/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const existing = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Webinar not found' });
+    }
+
+    const targetStatus = status
+      ? ((status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published')
+      : (existing.status === 'Published' ? 'Draft' : 'Published');
+
+    await db.run('UPDATE webinars SET status = ? WHERE id = ?', [targetStatus, id]);
+
+    const updated = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
+    res.json({
+      success: true,
+      message: `Webinar status changed to ${targetStatus}`,
+      id: updated.id,
+      webinar: updated
+    });
+  } catch (err) {
+    console.error('Toggle status error:', err);
+    res.status(500).json({ success: false, error: 'Failed to change webinar status' });
+  }
+});
+
+// 6. Delete webinar
+router.delete('/admin/webinars/:id', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
     const { id } = req.params;
 
-    await db.run('DELETE FROM registrations WHERE id = ?', [id]);
-    res.json({ success: true, message: 'Registration deleted' });
+    const existing = await db.get('SELECT * FROM webinars WHERE id = ?', [id]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Webinar not found' });
+    }
+
+    await db.run('DELETE FROM webinars WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Webinar deleted successfully' });
   } catch (err) {
-    console.error('Delete registration error:', err);
-    res.status(500).json({ success: false, error: 'Failed to delete registration' });
+    console.error('Delete webinar error:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete webinar' });
   }
 });
 
@@ -294,7 +410,7 @@ router.delete('/admin/registrations/:id', authenticateToken, async (req, res) =>
 // ADMIN CONFIGURATION & CONTENT MANAGEMENT
 // ==========================================
 
-// Update Webinar & Video & Pricing Configs
+// Update Global Webinar, Registration Link, Video & Pricing Configs
 router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
@@ -308,6 +424,7 @@ router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
       webinar_time,
       youtube_url,
       founder_title,
+      registration_form_url,
       lfhp_original_price,
       lfhp_offer_price,
       lfhp_title,
@@ -329,6 +446,7 @@ router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
       webinar_time,
       youtube_url,
       founder_title,
+      registration_form_url,
       lfhp_original_price,
       lfhp_offer_price,
       lfhp_title,
@@ -342,15 +460,16 @@ router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
 
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
-        await db.run(
-          `INSERT INTO site_config (key, value) VALUES (?, ?)
-           ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-          [key, String(value)]
-        );
+        const existing = await db.get('SELECT key FROM site_config WHERE key = ?', [key]);
+        if (existing) {
+          await db.run('UPDATE site_config SET value = ? WHERE key = ?', [String(value), key]);
+        } else {
+          await db.run('INSERT INTO site_config (key, value) VALUES (?, ?)', [key, String(value)]);
+        }
       }
     }
 
-    res.json({ success: true, message: 'Webinar settings updated successfully' });
+    res.json({ success: true, message: 'Webinar settings and registration form link updated successfully' });
   } catch (err) {
     console.error('Update config error:', err);
     res.status(500).json({ success: false, error: 'Failed to update settings' });
@@ -361,7 +480,7 @@ router.put('/admin/config/webinar', authenticateToken, async (req, res) => {
 router.put('/admin/config/faqs', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
-    const { faqs } = req.body; // Array of { id?, question, answer, sort_order }
+    const { faqs } = req.body;
 
     if (!Array.isArray(faqs)) {
       return res.status(400).json({ success: false, error: 'faqs must be an array' });
@@ -458,6 +577,36 @@ router.put('/admin/config/form-fields', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Update form fields error:', err);
     res.status(500).json({ success: false, error: 'Failed to update form fields' });
+  }
+});
+
+// Admin Stats & Overview
+router.get('/admin/stats', authenticateToken, async (req, res) => {
+  try {
+    const db = await getDb();
+    const webinars = await db.all('SELECT * FROM webinars');
+    const faqs = await db.all('SELECT id FROM faqs');
+    const resources = await db.all('SELECT id FROM resources');
+
+    const totalWebinars = webinars.length;
+    const publishedWebinars = webinars.filter(w => (w.status || '').toLowerCase() === 'published').length;
+    const draftWebinars = totalWebinars - publishedWebinars;
+    const pinnedWebinar = webinars.find(w => w.is_pinned === 1) || null;
+
+    res.json({
+      success: true,
+      stats: {
+        totalWebinars,
+        publishedWebinars,
+        draftWebinars,
+        pinnedWebinar: pinnedWebinar ? pinnedWebinar.title : 'None',
+        faqsCount: faqs.length,
+        resourcesCount: resources.length
+      }
+    });
+  } catch (err) {
+    console.error('Fetch admin stats error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch admin stats' });
   }
 });
 

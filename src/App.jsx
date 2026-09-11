@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Home from './pages/Home';
-import RegistrationSuccess from './components/RegistrationSuccess';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import { fetchPublicConfig } from './services/api';
 
 export default function App() {
-  const [route, setRoute] = useState('home'); // home, success, admin-login, admin-dashboard
-  const [registeredData, setRegisteredData] = useState(null);
+  const [route, setRoute] = useState('home'); // home, admin-login, admin-dashboard
   
   // Site data
   const [config, setConfig] = useState(null);
   const [faqs, setFaqs] = useState([]);
   const [resources, setResources] = useState([]);
-  const [formFields, setFormFields] = useState([]);
+  const [webinars, setWebinars] = useState([]);
+  const [pinnedWebinar, setPinnedWebinar] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Admin Auth state
@@ -27,7 +26,8 @@ export default function App() {
         setConfig(res.config || {});
         setFaqs(res.faqs || []);
         setResources(res.resources || []);
-        setFormFields(res.formFields || []);
+        setWebinars(res.webinars || []);
+        setPinnedWebinar(res.pinnedWebinar || null);
       }
     } catch (err) {
       console.error('Failed to load public config:', err);
@@ -39,7 +39,7 @@ export default function App() {
   useEffect(() => {
     loadConfig();
 
-    // Simple URL hash / path check
+    // Simple URL path check
     const path = window.location.pathname;
     if (path.startsWith('/admin')) {
       if (localStorage.getItem('ev_admin_token')) {
@@ -49,13 +49,6 @@ export default function App() {
       }
     }
   }, []);
-
-  // Handle successful student registration
-  const handleRegisterSuccess = (data) => {
-    setRegisteredData(data);
-    setRoute('success');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   // Handle Admin Login Success
   const handleAdminLoginSuccess = (token) => {
@@ -79,16 +72,6 @@ export default function App() {
         <div className="w-12 h-12 rounded-full border-4 border-cyber-cyan border-t-transparent animate-spin mb-4"></div>
         <span className="font-mono text-xs text-cyber-cyan tracking-widest">LOADING EV CYBER ACADEMY...</span>
       </div>
-    );
-  }
-
-  if (route === 'success') {
-    return (
-      <RegistrationSuccess 
-        registration={registeredData} 
-        config={config} 
-        onBackToHome={() => setRoute('home')} 
-      />
     );
   }
 
@@ -120,8 +103,8 @@ export default function App() {
       config={config} 
       faqs={faqs} 
       resources={resources} 
-      formFields={formFields} 
-      onRegisterSuccess={handleRegisterSuccess} 
+      webinars={webinars}
+      pinnedWebinar={pinnedWebinar}
       onNavigateAdmin={() => {
         if (adminToken) {
           setRoute('admin-dashboard');

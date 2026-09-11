@@ -1,13 +1,19 @@
 import React from 'react';
-import { Shield, Clock, Calendar, Play, CheckCircle2, Zap, Award } from 'lucide-react';
+import { Shield, Clock, Calendar, Play, CheckCircle2, Zap, Award, Pin, ExternalLink } from 'lucide-react';
 
-export default function HeroSection({ config, onRegisterClick, onWatchVideoClick }) {
+export default function HeroSection({ config, pinnedWebinar, onRegisterClick, onWatchVideoClick }) {
   const webinarName = config?.webinar_name || 'EV CYBER ACADEMY';
-  const webinarTitle = config?.webinar_title || '2-Day FREE Cyber Security Webinar';
-  const webinarSubtitle = config?.webinar_subtitle || 'Start Your Cyber Security Journey From Zero';
+  
+  // Prefer Pinned Webinar values if available, fallback to global site_config
+  const webinarTitle = pinnedWebinar?.title || config?.webinar_title || '2-Day FREE Cyber Security Webinar';
+  const webinarSubtitle = pinnedWebinar?.short_description || config?.webinar_subtitle || 'Start Your Cyber Security Journey From Zero';
   const webinarDesc = config?.webinar_desc || 'Learn the fundamentals of Cyber Security, networking, reconnaissance and practical security concepts in a beginner-friendly 2-day webinar.';
-  const webinarDate = config?.webinar_date || 'Coming Soon';
-  const webinarTime = config?.webinar_time || '7:00 PM – 8:00 PM IST';
+  const webinarDate = pinnedWebinar?.date || config?.webinar_date || 'Coming Soon';
+  const webinarTime = pinnedWebinar?.start_time && pinnedWebinar?.end_time 
+    ? `${pinnedWebinar.start_time} – ${pinnedWebinar.end_time}` 
+    : (config?.webinar_time || '7:00 PM – 8:00 PM IST');
+
+  const isPinned = Boolean(pinnedWebinar && pinnedWebinar.is_pinned === 1);
 
   return (
     <section id="hero" className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden bg-cyber-grid">
@@ -18,9 +24,18 @@ export default function HeroSection({ config, onRegisterClick, onWatchVideoClick
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         
         {/* Badge Banner */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyber-card border border-cyber-cyan/30 text-cyber-cyan text-xs sm:text-sm font-semibold mb-6 shadow-glow-cyan">
-          <Zap className="w-4 h-4 text-cyber-cyan fill-cyber-cyan/20 animate-pulse" />
-          <span className="font-mono uppercase tracking-wider">{webinarName}</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyber-card border border-cyber-cyan/40 text-cyber-cyan text-xs sm:text-sm font-semibold mb-6 shadow-glow-cyan">
+          {isPinned ? (
+            <>
+              <Pin className="w-4 h-4 text-cyber-cyan fill-cyber-cyan animate-pulse" />
+              <span className="font-mono uppercase tracking-wider font-bold">FEATURED / PINNED WEBINAR</span>
+            </>
+          ) : (
+            <>
+              <Zap className="w-4 h-4 text-cyber-cyan fill-cyber-cyan/20 animate-pulse" />
+              <span className="font-mono uppercase tracking-wider">{webinarName}</span>
+            </>
+          )}
           <span className="text-slate-500">•</span>
           <span>100% Live & Interactive</span>
         </div>
@@ -48,6 +63,7 @@ export default function HeroSection({ config, onRegisterClick, onWatchVideoClick
           >
             <Shield className="w-5 h-5 fill-slate-950" />
             <span>REGISTER FREE NOW</span>
+            <ExternalLink className="w-4 h-4" />
           </button>
 
           <button

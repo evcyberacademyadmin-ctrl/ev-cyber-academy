@@ -8,17 +8,12 @@ export async function fetchPublicConfig() {
   return res.json();
 }
 
-export async function registerWebinar(formData) {
-  const res = await fetch(`${API_BASE}/public/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData)
-  });
-  const data = await res.json();
+export async function fetchPublicWebinars() {
+  const res = await fetch(`${API_BASE}/public/webinars`);
   if (!res.ok) {
-    throw new Error(data.error || 'Registration failed');
+    throw new Error('Failed to fetch public webinars');
   }
-  return data;
+  return res.json();
 }
 
 export async function adminLogin(username, password) {
@@ -34,48 +29,82 @@ export async function adminLogin(username, password) {
   return data;
 }
 
-export async function fetchAdminStats(token) {
-  const res = await fetch(`${API_BASE}/admin/stats`, {
+// Multi-Webinar Management APIs
+export async function fetchAdminWebinars(token) {
+  const res = await fetch(`${API_BASE}/admin/webinars`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch admin stats');
+  if (!res.ok) throw new Error('Failed to fetch webinars');
   return res.json();
 }
 
-export async function fetchRegistrations(token, search = '', status = 'All') {
-  const url = new URL(`${window.location.origin}${API_BASE}/admin/registrations`);
-  if (search) url.searchParams.append('search', search);
-  if (status) url.searchParams.append('status', status);
-
-  const res = await fetch(url.toString(), {
-    headers: { 'Authorization': `Bearer ${token}` }
+export async function createAdminWebinar(token, webinarData) {
+  const res = await fetch(`${API_BASE}/admin/webinars`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(webinarData)
   });
-  if (!res.ok) throw new Error('Failed to fetch registrations');
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to create webinar');
+  return data;
 }
 
-export async function updateRegistrationStatus(token, id, status, notes) {
-  const res = await fetch(`${API_BASE}/admin/registrations/${id}`, {
+export async function updateAdminWebinar(token, id, webinarData) {
+  const res = await fetch(`${API_BASE}/admin/webinars/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(webinarData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update webinar');
+  return data;
+}
+
+export async function toggleWebinarPin(token, id, is_pinned) {
+  const res = await fetch(`${API_BASE}/admin/webinars/${id}/pin`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ status, notes })
+    body: JSON.stringify({ is_pinned })
   });
-  if (!res.ok) throw new Error('Failed to update registration');
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to toggle pin');
+  return data;
 }
 
-export async function deleteRegistration(token, id) {
-  const res = await fetch(`${API_BASE}/admin/registrations/${id}`, {
+export async function toggleWebinarStatus(token, id, status) {
+  const res = await fetch(`${API_BASE}/admin/webinars/${id}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ status })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to toggle status');
+  return data;
+}
+
+export async function deleteAdminWebinar(token, id) {
+  const res = await fetch(`${API_BASE}/admin/webinars/${id}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Failed to delete registration');
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete webinar');
+  return data;
 }
 
+// Global Config APIs
 export async function updateWebinarConfig(token, configData) {
   const res = await fetch(`${API_BASE}/admin/config/webinar`, {
     method: 'PUT',

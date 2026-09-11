@@ -46,6 +46,12 @@ export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' })
             Home
           </button>
           <button 
+            onClick={() => scrollToSection('all-webinars')} 
+            className="hover:text-cyber-cyan transition-colors font-semibold"
+          >
+            Webinars
+          </button>
+          <button 
             onClick={() => scrollToSection('founder-video')} 
             className="hover:text-cyber-cyan transition-colors"
           >
@@ -124,6 +130,12 @@ export default function Header({ onRegisterClick, webinarDate = 'Coming Soon' })
             className="w-full text-left px-3 py-2 text-base font-medium text-slate-200 hover:bg-cyber-dark rounded-md"
           >
             Home
+          </button>
+          <button
+            onClick={() => scrollToSection('all-webinars')}
+            className="w-full text-left px-3 py-2 text-base font-medium text-cyber-cyan hover:bg-cyber-dark rounded-md font-semibold"
+          >
+            Upcoming Webinars
           </button>
           <button
             onClick={() => scrollToSection('founder-video')}
